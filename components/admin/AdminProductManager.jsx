@@ -83,7 +83,6 @@ export default function AdminProductManager() {
     primaryImage: '',
     hoverImage: '',
     category: 'drinkware',
-    brand: 'Thulira',
     colors: '',
     inStock: true,
     description: '',
@@ -204,7 +203,6 @@ export default function AdminProductManager() {
       primaryImage: product.primaryImage,
       hoverImage: product.hoverImage || '',
       category: product.category,
-      brand: product.brand,
       colors: product.colors.join(', '),
       inStock: product.inStock,
       description: product.description,
@@ -474,18 +472,6 @@ export default function AdminProductManager() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Brand *</label>
-              <input
-                type="text"
-                name="brand"
-                value={formData.brand}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                required
-              />
-            </div>
-
-            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Colors</label>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-3">
                 {[
@@ -596,13 +582,42 @@ export default function AdminProductManager() {
                           
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
                             {Array.from({ length: 3 }).map((_, index) => (
-                              <div key={index} className="border-2 border-dashed border-gray-300 rounded-lg p-3 text-center">
-                                {colorImages[color] && colorImages[color][index] ? (
+                              <div key={index} className="space-y-2">
+                                <div className="flex items-start space-x-2">
+                                  <input
+                                    type="text"
+                                    value={colorImages[color] && colorImages[color][index] ? colorImages[color][index] : ''}
+                                    onChange={(e) => {
+                                      const newValue = e.target.value;
+                                      setColorImages(prev => {
+                                        const currentImages = prev[color] || [];
+                                        const newImages = [...currentImages];
+                                        newImages[index] = newValue;
+                                        return {
+                                          ...prev,
+                                          [color]: newImages.filter(img => img)
+                                        };
+                                      });
+                                    }}
+                                    className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+                                    placeholder={`Image ${index + 1} URL`}
+                                  />
+                                  <label className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs cursor-pointer transition-colors whitespace-nowrap">
+                                    Upload
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={(e) => handleImageUpload(e, null, color)}
+                                      className="hidden"
+                                    />
+                                  </label>
+                                </div>
+                                {colorImages[color] && colorImages[color][index] && (
                                   <div className="relative">
                                     <img 
                                       src={colorImages[color][index]} 
                                       alt={`${color} image ${index + 1}`}
-                                      className="w-full h-24 object-cover rounded"
+                                      className="w-full h-20 object-cover rounded border"
                                     />
                                     <button
                                       type="button"
@@ -612,26 +627,12 @@ export default function AdminProductManager() {
                                           [color]: prev[color].filter((_, i) => i !== index)
                                         }));
                                       }}
-                                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                                      className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs hover:bg-red-600"
                                     >
                                       ×
                                     </button>
                                   </div>
-                                ) : (
-                                  <div className="flex flex-col items-center justify-center h-24 text-gray-500">
-                                    <span className="text-sm mb-1">Image {index + 1}</span>
-                                    <span className="text-xs">Click to upload</span>
-                                  </div>
                                 )}
-                                <label className="mt-2 bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded text-xs cursor-pointer block">
-                                  Upload
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => handleImageUpload(e, null, color)}
-                                    className="hidden"
-                                  />
-                                </label>
                               </div>
                             ))}
                           </div>
