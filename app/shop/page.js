@@ -9,7 +9,7 @@ import MobileNav from '@/components/MobileNav';
 import Footer from '@/components/sections/Footer';
 import ScrollToTop from '@/components/ScrollToTop';
 import ProductCard from '@/components/ProductCard';
-import { getAllProducts, CATEGORY_INFO } from '@/lib/product-data';
+import { CATEGORY_INFO } from '@/lib/product-data';
 
 const categories = [
   { id: 'all', name: 'All Categories' },
@@ -82,14 +82,22 @@ export default function ShopPage() {
 
   // Load products
   useEffect(() => {
-    try {
-      const allProducts = getAllProducts();
-      setProducts(allProducts);
-    } catch (error) {
-      console.error('Error loading products:', error);
-    } finally {
-      setLoading(false);
-    }
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/products');
+        const data = await response.json();
+        if (data.success) {
+          setProducts(data.products);
+        }
+      } catch (error) {
+        console.error('Error loading products:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchProducts();
   }, []);
 
   // Apply filters

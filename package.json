@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "seed": "node scripts/seed-atlas.js",
-    "seed:local": "node scripts/seed-products.js"
+    "seed:local": "node scripts/seed-products.js",
+    "seed:cli": "node scripts/seed-cli.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

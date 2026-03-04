@@ -11,7 +11,8 @@ import Footer from '@/components/sections/Footer';
 import ScrollToTop from '@/components/ScrollToTop';
 import { useCart } from '@/context/CartContext';
 import Link from 'next/link';
-import { PRODUCTS } from '@/lib/product-data';
+// Remove hardcoded import
+// import { PRODUCTS } from '@/lib/product-data';
 
 export default function ProductDetailsPage() {
   const params = useParams();
@@ -66,19 +67,21 @@ export default function ProductDetailsPage() {
     }
   }, [product, selectedColor]);
 
-  const fetchProductDetails = () => {
+  const fetchProductDetails = async () => {
     try {
       setLoading(true);
       
-      const foundProduct = PRODUCTS.find(p => p._id === productId || p.id === parseInt(productId));
+      const response = await fetch(`/api/products?search=${productId}`);
+      const data = await response.json();
       
-      if (foundProduct) {
+      if (data.success && data.products.length > 0) {
+        const foundProduct = data.products[0]; // API returns array
         setProduct(foundProduct);
+        
         if (foundProduct.colors && foundProduct.colors.length > 0) {
           setSelectedColor(foundProduct.colors[0]);
           const colorImages = foundProduct.images?.[foundProduct.colors[0]];
           if (colorImages && colorImages.length > 0) {
-            // Create array with primary image first, then gallery images (up to 3)
             const images = [
               foundProduct.primaryImage,
               ...colorImages.slice(0, 3)
@@ -94,27 +97,36 @@ export default function ProductDetailsPage() {
           setSelectedImage(0);
         }
       } else {
+        // Try numeric ID search
         const numericId = parseInt(productId);
-        const foundByNumericId = PRODUCTS.find(p => p.id === numericId);
-        if (foundByNumericId) {
-          setProduct(foundByNumericId);
-          if (foundByNumericId.colors && foundByNumericId.colors.length > 0) {
-            setSelectedColor(foundByNumericId.colors[0]);
-            const colorImages = foundByNumericId.images?.[foundByNumericId.colors[0]];
-            if (colorImages && colorImages.length > 0) {
-              const images = [
-                foundByNumericId.primaryImage,
-                ...colorImages.slice(0, 3)
-              ];
-              setProductImages(images);
-              setSelectedImage(0);
+        if (!isNaN(numericId)) {
+          const numericResponse = await fetch(`/api/products?search=${numericId}`);
+          const numericData = await numericResponse.json();
+          
+          if (numericData.success && numericData.products.length > 0) {
+            const foundByNumericId = numericData.products[0];
+            setProduct(foundByNumericId);
+            
+            if (foundByNumericId.colors && foundByNumericId.colors.length > 0) {
+              setSelectedColor(foundByNumericId.colors[0]);
+              const colorImages = foundByNumericId.images?.[foundByNumericId.colors[0]];
+              if (colorImages && colorImages.length > 0) {
+                const images = [
+                  foundByNumericId.primaryImage,
+                  ...colorImages.slice(0, 3)
+                ];
+                setProductImages(images);
+                setSelectedImage(0);
+              } else {
+                setProductImages([foundByNumericId.primaryImage].filter(Boolean));
+                setSelectedImage(0);
+              }
             } else {
               setProductImages([foundByNumericId.primaryImage].filter(Boolean));
               setSelectedImage(0);
             }
           } else {
-            setProductImages([foundByNumericId.primaryImage].filter(Boolean));
-            setSelectedImage(0);
+            setProduct(null);
           }
         } else {
           setProduct(null);
