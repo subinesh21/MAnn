@@ -34,7 +34,7 @@ async function seedAtlasDatabase() {
     console.log('✅ Connected to MongoDB Atlas successfully!');
     
     // Import Product model
-    const Product = require('../models/Product').default || require('../models/Product');
+    const Product = require('../models/Product');
     
     // Clear existing products
     console.log('🗑️  Clearing existing products...');
