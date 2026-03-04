@@ -244,7 +244,7 @@ export default function ProductDetailsPage() {
               
               {/* Thumbnail Images - Exactly 3 boxes */}
               {productImages.length > 1 && (
-                <div className="grid grid-cols-3 gap-1 sm:gap-2 lg:gap-3">
+                <div className="grid grid-cols-3 gap-1 sm:gap-2 lg:gap-3 mb-4">
                   {productImages.slice(1).map((img, i) => (
                     <button
                       key={i}
@@ -260,6 +260,58 @@ export default function ProductDetailsPage() {
                       />
                     </button>
                   ))}
+                </div>
+              )}
+
+              {/* Color Image Grid */}
+              {product.images && Object.keys(product.images).length > 0 && (
+                <div className="mt-6 border-t border-gray-200 pt-6">
+                  <h3 className="text-sm font-medium text-gray-900 mb-3">More Images by Color</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {Object.entries(product.images).map(([color, images]) => (
+                      <div key={color} className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full border border-gray-300"
+                            style={{ backgroundColor: getColorCode(color) }}
+                          />
+                          <span className="text-xs font-medium text-gray-700">{color}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-1">
+                          {images.slice(0, 4).map((img, idx) => (
+                            <div 
+                              key={idx}
+                              className="aspect-square overflow-hidden rounded border border-gray-200 hover:border-[#fbb710] transition-colors cursor-pointer"
+                              onClick={() => {
+                                // Switch to this color and show its images
+                                setSelectedColor(color);
+                                const colorImages = product.images[color];
+                                if (colorImages && colorImages.length > 0) {
+                                  const imagesToShow = [
+                                    product.primaryImage,
+                                    ...colorImages.slice(0, 3)
+                                  ];
+                                  setProductImages(imagesToShow);
+                                  setSelectedImage(0);
+                                }
+                              }}
+                            >
+                              <img 
+                                src={img} 
+                                alt={`${product.name} - ${color} - ${idx + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                        {images.length > 4 && (
+                          <span className="text-xs text-gray-500">
+                            +{images.length - 4} more
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
