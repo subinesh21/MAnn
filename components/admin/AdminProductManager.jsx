@@ -43,12 +43,39 @@ const AddIcon = () => (
   </svg>
 );
 
+const getColorCode = (colorName) => {
+  const colors = {
+    Azure: '#007FFF',
+    Celeste: '#B2FFFF',
+    Charcoal: '#36454F',
+    Coffee: '#6F4E37',
+    Coral: '#b31313ff',
+    Fern: '#4F7942',
+    'Sand Castle': '#D8C59F',
+    Innocent: '#F5F5DC',
+    Pink: '#FFC0CB',
+    Blue: '#4169E1',
+    Green: '#228B22',
+    White: '#FFFFFF',
+    Black: '#000000',
+    Natural: '#A67B5B',
+    Walnut: '#5C4033',
+    Bamboo: '#906F5D',
+    'Natural Wood': '#8B5A2B',
+    Terracotta: '#E2725B',
+    Multi: 'linear-gradient(45deg, #FF6B6B, #4ECDC4, #45B7D1)',
+  };
+  return colors[colorName] || '#CCCCCC';
+};
+
 export default function AdminProductManager() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedProduct, setExpandedProduct] = useState(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showColorImages, setShowColorImages] = useState(false);
+  const [colorImages, setColorImages] = useState({}); // { color: [img1, img2, img3] }
   const [formData, setFormData] = useState({
     name: '',
     price: '',
@@ -145,7 +172,8 @@ export default function AdminProductManager() {
           originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
           colors: formData.colors.split(',').map(color => color.trim()),
           rating: parseFloat(formData.rating),
-          reviews: parseInt(formData.reviews)
+          reviews: parseInt(formData.reviews),
+          images: colorImages // Add color images to the product data
         })
       });
 
@@ -184,6 +212,7 @@ export default function AdminProductManager() {
       reviews: product.reviews.toString(),
       isActive: product.isActive
     });
+    setColorImages(product.images || {});
   };
 
   const handleAddNew = () => {
@@ -274,6 +303,8 @@ export default function AdminProductManager() {
       reviews: 0,
       isActive: true
     });
+    setColorImages({});
+    setShowColorImages(false);
   };
 
   const cancelForm = () => {
@@ -455,15 +486,46 @@ export default function AdminProductManager() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Colors (comma separated) *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Colors</label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-3">
+                {[
+                  'Azure', 'Celeste', 'Charcoal', 'Coffee', 'Coral', 'Fern', 
+                  'Sand Castle', 'Innocent', 'Pink', 'Blue', 'Green', 'White',
+                  'Black', 'Natural', 'Walnut', 'Bamboo', 'Natural Wood', 
+                  'Terracotta', 'Multi'
+                ].map((color) => (
+                  <label key={color} className="flex items-center gap-2 p-2 border rounded hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.colors.split(',').map(c => c.trim()).includes(color)}
+                      onChange={(e) => {
+                        const currentColors = formData.colors.split(',').map(c => c.trim()).filter(c => c);
+                        if (e.target.checked) {
+                          setFormData(prev => ({
+                            ...prev,
+                            colors: [...currentColors, color].join(', ')
+                          }));
+                        } else {
+                          setFormData(prev => ({
+                            ...prev,
+                            colors: currentColors.filter(c => c !== color).join(', ')
+                          }));
+                        }
+                      }}
+                      className="rounded text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-sm">{color}</span>
+                  </label>
+                ))}
+              </div>
               <input
                 type="text"
                 name="colors"
                 value={formData.colors}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                placeholder="e.g., Red, Blue, Green"
-                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                placeholder="Selected colors will appear here"
+                readOnly
               />
             </div>
 
@@ -504,6 +566,88 @@ export default function AdminProductManager() {
                 required
               />
             </div>
+
+            {/* Color Images Section */}
+            {formData.colors && formData.colors.trim() && (
+              <div className="md:col-span-2">
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-medium text-gray-800">Color Images</h3>
+                    <button
+                      type="button"
+                      onClick={() => setShowColorImages(!showColorImages)}
+                      className="text-green-600 hover:text-green-800 font-medium"
+                    >
+                      {showColorImages ? 'Hide' : 'Show'} Color Image Upload
+                    </button>
+                  </div>
+                  
+                  {showColorImages && (
+                    <div className="space-y-6">
+                      {formData.colors.split(',').map(color => color.trim()).filter(color => color).map((color) => (
+                        <div key={color} className="border border-gray-100 rounded-lg p-4">
+                          <h4 className="font-medium text-gray-700 mb-3 flex items-center gap-2">
+                            <div 
+                              className="w-4 h-4 rounded-full border"
+                              style={{ backgroundColor: getColorCode(color) }}
+                            />
+                            {color} Images (Max 3)
+                          </h4>
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                            {Array.from({ length: 3 }).map((_, index) => (
+                              <div key={index} className="border-2 border-dashed border-gray-300 rounded-lg p-3 text-center">
+                                {colorImages[color] && colorImages[color][index] ? (
+                                  <div className="relative">
+                                    <img 
+                                      src={colorImages[color][index]} 
+                                      alt={`${color} image ${index + 1}`}
+                                      className="w-full h-24 object-cover rounded"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setColorImages(prev => ({
+                                          ...prev,
+                                          [color]: prev[color].filter((_, i) => i !== index)
+                                        }));
+                                      }}
+                                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="flex flex-col items-center justify-center h-24 text-gray-500">
+                                    <span className="text-sm mb-1">Image {index + 1}</span>
+                                    <span className="text-xs">Click to upload</span>
+                                  </div>
+                                )}
+                                <label className="mt-2 bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded text-xs cursor-pointer block">
+                                  Upload
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => handleImageUpload(e, null, color)}
+                                    className="hidden"
+                                  />
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          {colorImages[color] && colorImages[color].length > 0 && (
+                            <div className="text-sm text-gray-600">
+                              Uploaded {colorImages[color].length} of 3 images
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center space-x-4">
               <label className="flex items-center">
