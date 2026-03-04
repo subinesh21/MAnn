@@ -1,0 +1,42 @@
+{
+  "name": "thulira",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "dev:turbo": "next dev --turbo",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^6.5.0",
+    "@mui/material": "^6.3.1",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/nodemailer": "^6.4.17",
+    "axios": "^1.7.9",
+    "bcryptjs": "^3.0.3",
+    "bootstrap": "^5.3.3",
+    "firebase": "^11.1.0",
+    "firebase-admin": "^13.6.1",
+    "framer-motion": "^11.11.17",
+    "google-auth-library": "^10.5.0",
+    "iron-session": "^8.0.4",
+    "lucide-react": "^0.460.0",
+    "mongoose": "^8.22.1",
+    "next": "16.1.6",
+    "nodemailer": "^6.9.16",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-toastify": "^10.0.6"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "25.2.2",
+    "@types/react": "19.2.13",
+    "tailwindcss": "^4",
+    "typescript": "5.9.3"
+  }
+}
