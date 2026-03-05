@@ -15,9 +15,22 @@ const navItems = [
 
 export default function Sidebar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
   const { cartCount } = useCart();
   const { user, isAuthenticated, logout } = useAuth();
+
+  // Check if mobile on mount and on resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 992);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -32,7 +45,6 @@ export default function Sidebar() {
       document.body.classList.remove('no-scroll');
     }
 
-    // Cleanup on unmount
     return () => {
       document.body.classList.remove('no-scroll');
     };
@@ -43,64 +55,94 @@ export default function Sidebar() {
     if (!isAuthenticated) {
       return '/login';
     }
-    // If user is admin, go to admin panel, otherwise go to account page
     return user?.role === 'admin' ? '/admin' : '/account';
   };
 
-  const handleAccountClick = (e) => {
-    if (!isAuthenticated) {
-      // For non-authenticated users, let the link handle navigation to login
-      return;
-    }
-    // For authenticated users, we don't need to prevent default
-    // The link will navigate based on getAccountLink()
-  };
+  // Don't render sidebar on mobile at all
+  if (isMobile) {
+    return (
+      <>
+        {/* Mobile Nav */}
+        <div className="mobile-nav fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+          <div className="amado-navbar-brand">
+            <a href="/" className="text-2xl font-bold text-[#52dd28ff]">
+              <span className="text-[#52dd28ff]">Thulira</span>
+            </a>
+          </div>
+          <button 
+            className="amado-navbar-toggler flex flex-col gap-1 p-2"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            <span className="w-6 h-0.5 bg-[#52dd28ff]"></span>
+            <span className="w-6 h-0.5 bg-[#52dd28ff]"></span>
+            <span className="w-6 h-0.5 bg-[#52dd28ff]"></span>
+          </button>
+        </div>
 
+        {/* Mobile Menu Overlay - This would be your separate mobile nav component */}
+        {isMobileMenuOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-40"
+            onClick={() => setIsMobileMenuOpen(false)}
+          ></div>
+        )}
+      </>
+    );
+  }
+
+  // Desktop sidebar - full render
   return (
     <>
-      {/* Mobile Nav - This will be visible on mobile */}
-      <div className="mobile-nav lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-        <div className="amado-navbar-brand">
-          <a href="/" className="text-2xl font-bold text-[#52dd28ff]">
-            <span className="text-[#52dd28ff]">Thulira</span>
+      <header style={{
+        width: '280px',
+        position: 'fixed',
+        top: 0,
+        bottom: 0,
+        left: 0,
+        backgroundColor: '#fff',
+        borderRight: '1px solid #ebebeb',
+        zIndex: 1000,
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '60px 40px 10px 40px',
+        overflowY: 'auto'
+      }}>
+        {/* Logo */}
+        <div style={{ marginBottom: '40px' }}>
+          <a href="/" style={{ fontSize: '30px', fontWeight: 'bold', color: '#131212' }}>
+            <span style={{ color: '#52dd28ff' }}>Thulira</span>
           </a>
-        </div>
-        <button 
-          className="amado-navbar-toggler flex flex-col gap-1 p-2"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        >
-          <span className="w-6 h-0.5 bg-[#52dd28ff]"></span>
-          <span className="w-6 h-0.5 bg-[#52dd28ff]"></span>
-          <span className="w-6 h-0.5 bg-[#52dd28ff]"></span>
-        </button>
-      </div>
-
-      {/* Sidebar - Hidden completely on mobile, visible only on desktop */}
-      <header className="amado-sidebar hidden lg:flex">
-        {/* Close Icon - Mobile (only visible when menu is open, but sidebar is hidden on mobile anyway) */}
-        <div 
-          className="nav-close absolute top-5 right-5 cursor-pointer lg:hidden"
-          onClick={() => setIsMobileMenuOpen(false)}
-        >
-          <i className="fa fa-close text-2xl text-[#6b6b6b] hover:text-[#52dd28ff] transition-colors"></i>
+          <p style={{ fontSize: '12px', color: '#6b6b6b', marginTop: '4px', marginLeft: '4px', letterSpacing: '3px' }}>
+            SUSTAINABLE LIVING
+          </p>
         </div>
 
-        {/* Logo - Increased bottom margin */}
-        <div className="logo mb-40">
-          <a href="/" className="text-3xl font-bold text-[#131212]">
-            <span className="text-[#52dd28ff]">Thulira</span>
-          </a>
-          <p className="text-xs text-[#6b6b6b] mt-1 ml-1 tracking-[3px]">SUSTAINABLE LIVING</p>
-        </div>
-
-        {/* Navigation - Increased bottom margin */}
-        <nav className="amado-nav mb-30 ml-7">
-          <ul>
+        {/* Navigation */}
+        <nav style={{ marginBottom: '30px', marginLeft: '28px' }}>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {navItems.map((item) => (
-              <li key={item.name} className={pathname === item.href ? 'active' : ''}>
+              <li key={item.name} style={{ marginBottom: '30px' }}>
                 <a 
                   href={item.href}
-                  className={pathname === item.href ? 'text-[#52dd28ff]' : ''}
+                  style={{
+                    fontSize: '14px',
+                    textTransform: 'uppercase',
+                    fontWeight: 600,
+                    color: pathname === item.href ? '#52dd28ff' : '#131212',
+                    letterSpacing: '1px',
+                    transition: 'all 0.3s ease',
+                    display: 'inline-block',
+                    position: 'relative',
+                    textDecoration: 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = '#52dd28ff';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (pathname !== item.href) {
+                      e.currentTarget.style.color = '#131212';
+                    }
+                  }}
                 >
                   {item.name === 'Cart' ? `${item.name} (${cartCount})` : item.name}
                 </a>
@@ -109,128 +151,158 @@ export default function Sidebar() {
           </ul>
         </nav>
 
-        {/* Blogs Button - Same style as Search */}
-        <div className="mb-4 ml-4">
+        {/* Blogs Button */}
+        <div style={{ marginBottom: '16px', marginLeft: '16px' }}>
           <a 
             href="/blogs" 
-            className="flex items-center w-full text-left group"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              width: '100%',
+              textAlign: 'left',
+              textDecoration: 'none'
+            }}
           >
-            <FileText className="w-5 h-5 mr-4 text-[#6b6b6b] group-hover:text-[#52dd28ff] transition-colors" />
-            <span className="text-sm font-medium text-[#131212] group-hover:text-[#52dd28ff] transition-colors">
+            <FileText style={{ width: '20px', height: '20px', marginRight: '16px', color: '#6b6b6b' }} />
+            <span style={{ fontSize: '14px', fontWeight: 500, color: '#131212' }}>
               Blogs
             </span>
           </a>
         </div>
 
-        {/* Search Section - Always Open */}
-        <div className="mb-6 ml-4">
-          <div className="flex items-center mb-3">
-            <i className="fa fa-search mr-4 text-[#6b6b6b]"></i>
-            <span className="text-sm font-medium text-[#131212]">Search</span>
+        {/* Search Section */}
+        <div style={{ marginBottom: '24px', marginLeft: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+            <i className="fa fa-search" style={{ marginRight: '16px', color: '#6b6b6b' }}></i>
+            <span style={{ fontSize: '14px', fontWeight: 500, color: '#131212' }}>Search</span>
           </div>
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              // Handle search submission here
               console.log('Search submitted');
             }}
           >
             <input 
               type="search" 
               placeholder="Type your keyword..."
-              className="w-full px-4 py-3 border border-[#ebebeb] text-sm focus:outline-none focus:border-[#52dd28ff] focus:ring-1 focus:ring-[#52dd28ff]"
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                border: '1px solid #ebebeb',
+                fontSize: '14px',
+                outline: 'none'
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = '#52dd28ff';
+                e.currentTarget.style.boxShadow = '0 0 0 1px #52dd28ff';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = '#ebebeb';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
             />
           </form>
         </div>
 
-        {/* Account - Dynamic based on authentication and role */}
-        <div className="pt-6 pb-6 ml-4 border-t border-[#ebebeb]">
+        {/* Account Section */}
+        <div style={{ paddingTop: '24px', paddingBottom: '24px', marginLeft: '16px', borderTop: '1px solid #ebebeb' }}>
           {isAuthenticated ? (
-            <div className="space-y-4">
-              {/* User info and link - goes to either admin or account page based on role */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <a 
                 href={getAccountLink()}
-                onClick={handleAccountClick}
-                className="flex items-center text- text-[#52dd28ff] hover:text-[#52dd28ff] transition-colors"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  color: '#52dd28ff',
+                  textDecoration: 'none'
+                }}
               >
-                <i className="fa fa-user mr-4 text-[#52dd28ff]"></i>
+                <i className="fa fa-user" style={{ marginRight: '16px', color: '#52dd28ff' }}></i>
                 Hi, {user?.name?.split(' ')[0]}
                 {user?.role === 'admin' && (
-                  <span className="ml-2 text-[10px] text-[#52dd28ff]  px-1.5 py-0.5 rounded-full">Admin</span>
+                  <span style={{ marginLeft: '8px', fontSize: '10px', color: '#52dd28ff', padding: '2px 6px', borderRadius: '999px' }}>Admin</span>
                 )}
               </a>
               <button 
                 onClick={logout}
-                className="flex items-center text-sm text-[#131212] hover:text-[#52dd28ff] transition-colors"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: '14px',
+                  color: '#131212',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 0
+                }}
               >
-                <i className="fa fa-sign-out mr-4"></i>
+                <i className="fa fa-sign-out" style={{ marginRight: '16px' }}></i>
                 Logout
               </button>
             </div>
           ) : (
             <a            
               href="/account" 
-              className="flex items-center text-sm text-[#52dd28ff] hover:text-[#52dd28ff]"
-            > <i className="fa fa-user mr-4  text-[#52dd28ff] hover:text-[#52dd28ff]"></i>
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                fontSize: '14px',
+                color: '#52dd28ff',
+                textDecoration: 'none'
+              }}
+            >
+              <i className="fa fa-user" style={{ marginRight: '16px', color: '#52dd28ff' }}></i>
               Account
             </a>
           )}
         </div>
 
-        {/* Social Buttons - Brand Colors */}
-        <div className="social-info flex justify-between mt-2">
-          {/* Mail / Email - Gmail/Outlook style */}
-          <a 
-            href="#" 
-            className="text-[#6b6b6b] hover:text-[#D44638] transition-colors"
-            aria-label="Email"
-          >
-            <Mail className="w-6 h-6" />
+        {/* Social Buttons */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+          <a href="#" style={{ color: '#6b6b6b' }} aria-label="Email">
+            <Mail style={{ width: '24px', height: '24px' }} />
           </a>
-          
-          {/* Facebook */}
-          <a 
-            href="#" 
-            className="text-[#6b6b6b] hover:text-[#1877F2] transition-colors"
-            aria-label="Facebook"
-          >
-            <Facebook className="w-6 h-6" />
+          <a href="#" style={{ color: '#6b6b6b' }} aria-label="Facebook">
+            <Facebook style={{ width: '24px', height: '24px' }} />
           </a>
-          
-          {/* Twitter / X */}
-          <a 
-            href="#" 
-            className="text-[#6b6b6b] hover:text-[#1DA1F2] transition-colors"
-            aria-label="Twitter"
-          >
-            <Twitter className="w-6 h-6" />
+          <a href="#" style={{ color: '#6b6b6b' }} aria-label="Twitter">
+            <Twitter style={{ width: '24px', height: '24px' }} />
           </a>
-          
-          {/* Instagram - using the official Instagram color */}
-          <a 
-            href="#" 
-            className="text-[#6b6b6b] hover:text-[#E4405F] transition-colors"
-            aria-label="Instagram"
-          >
-            <Instagram className="w-6 h-6" />
+          <a href="#" style={{ color: '#6b6b6b' }} aria-label="Instagram">
+            <Instagram style={{ width: '24px', height: '24px' }} />
           </a>
         </div>
       </header>
 
-      {/* Overlay for mobile - only show when mobile menu is open */}
-      {isMobileMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setIsMobileMenuOpen(false)}
-        ></div>
-      )}
-
       <style jsx>{`
-        .amado-nav ul li a:hover {
+        .mobile-nav {
+          display: flex;
+        }
+        
+        @media (min-width: 992px) {
+          .mobile-nav {
+            display: none;
+          }
+        }
+
+        a:hover, button:hover {
           color: #52dd28ff !important;
         }
-        .amado-nav ul li.active a {
+        
+        button:hover i {
           color: #52dd28ff !important;
+        }
+        
+        a:hover i {
+          color: #52dd28ff !important;
+        }
+        
+        a:hover span {
+          color: #52dd28ff !important;
+        }
+        
+        .fa, .fa-search, .fa-user, .fa-sign-out {
+          transition: color 0.3s ease;
         }
       `}</style>
     </>

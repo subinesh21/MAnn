@@ -100,66 +100,7 @@
   float: right;
 }
 
-/* Sidebar Navigation - FIXED */
-.amado-sidebar {
-  width: 280px;
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  background-color: #fff;
-  border-right: 1px solid #ebebeb;
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  padding: 60px 40px 10px 40px;
-  overflow-y: auto;
-}
-
-/* Note: Sidebar is hidden on mobile via the 'hidden lg:flex' class in the JSX */
-
-.amado-nav ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.amado-nav ul li {
-  margin-bottom: 30px;
-}
-
-.amado-nav ul li a {
-  font-size: 14px;
-  text-transform: uppercase;
-  font-weight: 600;
-  color: #131212;
-  letter-spacing: 1px;
-  transition: all 0.3s ease;
-  display: inline-block;
-  position: relative;
-}
-
-.amado-nav ul li a::before {
-  content: '';
-  position: absolute;
-  left: -40px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 0;
-  height: 2px;
-  background-color: #52dd28ff;
-  transition: width 0.3s ease;
-}
-
-.amado-nav ul li.active a,
-.amado-nav ul li a:hover {
-  color: #52dd28ff;
-}
-
-.amado-nav ul li.active a::before,
-.amado-nav ul li a:hover::before {
-  width: 30px;
-}
+/* Note: Sidebar styles are now handled inline in the component */
 
 /* Amado Buttons */
 .amado-btn {
@@ -435,15 +376,9 @@
 
 /* Mobile Navigation - FIXED */
 @media (max-width: 991px) {
-  /* Sidebar is completely hidden on mobile via hidden class */
-  
   .main-content-wrapper {
     margin-left: 0;
     float: none;
-  }
-  
-  .mobile-nav {
-    display: flex !important;
   }
   
   .products-catagories-area {
