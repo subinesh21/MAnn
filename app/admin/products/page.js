@@ -1,4 +1,4 @@
-// Admin Products Page - Manage Hardcoded Products
+// Admin Products Page - Manage MongoDB Products
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,12 +8,10 @@ import {
   Search, Filter, X, ChevronLeft, ChevronRight 
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { PRODUCTS } from '@/lib/product-data';
 import { toast } from 'react-toastify';
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState([]);
-  const [productStates, setProductStates] = useState({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
@@ -21,99 +19,88 @@ export default function AdminProductsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
-  // Fetch product states from MongoDB
+  // Fetch all products from MongoDB Products collection
   useEffect(() => {
-    fetchProductStates();
+    fetchProducts();
   }, []);
 
-  const fetchProductStates = async () => {
+  const fetchProducts = async () => {
     try {
-      const response = await fetch('/api/admin/product-state');
+      setLoading(true);
+      const response = await fetch('/api/products');
       const data = await response.json();
       
       if (data.success) {
-        const statesMap = {};
-        data.productStates.forEach(state => {
-          statesMap[state.productId] = state;
-        });
-        setProductStates(statesMap);
+        setProducts(data.products || []);
+      } else {
+        toast.error('Failed to fetch products');
+        setProducts([]);
       }
     } catch (error) {
-      console.error('Error fetching product states:', error);
+      console.error('Error fetching products:', error);
+      toast.error('Error loading products');
+      setProducts([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Merge hardcoded products with their states
-  useEffect(() => {
-    const mergedProducts = PRODUCTS.map(product => {
-      const state = productStates[product._id] || {};
-      return {
-        ...product,
-        isHidden: state.isHidden || false,
-        isOutOfStock: state.isOutOfStock || false,
-        isRemoved: state.isRemoved || false,
-      };
-    });
-    
-    setProducts(mergedProducts);
-  }, [productStates]);
-
-  // Update product state
-  const updateProductState = async (productId, updates) => {
+  // Update product directly in MongoDB Products collection
+  const updateProduct = async (productId, updates) => {
     try {
-      const response = await fetch('/api/admin/product-state', {
-        method: 'POST',
+      const response = await fetch(`/api/admin/products/${productId}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId, ...updates })
+        body: JSON.stringify(updates)
       });
       
       const data = await response.json();
       
-      if (data.success) {
-        setProductStates(prev => ({
-          ...prev,
-          [productId]: { ...prev[productId], ...updates }
-        }));
+      if (response.ok) {
+        // Refresh products list
+        await fetchProducts();
         
         const action = updates.isRemoved ? 'removed' : 
-                      updates.isHidden ? 'hidden' : 
-                      updates.isOutOfStock ? 'marked out of stock' :
+                      !updates.isActive ? 'hidden' : 
+                      !updates.inStock ? 'marked out of stock' :
                       'restored';
         
         toast.success(`Product ${action} successfully`);
+      } else {
+        toast.error(data.message || 'Failed to update product');
       }
     } catch (error) {
-      console.error('Error updating product state:', error);
-      toast.error('Failed to update product state');
+      console.error('Error updating product:', error);
+      toast.error('Failed to update product');
     }
   };
 
-  // Action handlers
+  // Action handlers - now update the Products collection directly
   const handleToggleVisibility = (productId, currentStatus) => {
-    updateProductState(productId, { isHidden: !currentStatus });
+    // currentStatus is isActive (true = visible, false = hidden)
+    updateProduct(productId, { isActive: !currentStatus });
   };
 
   const handleToggleStock = (productId, currentStatus) => {
-    updateProductState(productId, { isOutOfStock: !currentStatus });
+    // currentStatus is inStock (true = in stock, false = out of stock)
+    updateProduct(productId, { inStock: !currentStatus });
   };
 
   const handleRemove = (productId) => {
     if (confirm('Are you sure you want to remove this product? This action can be undone.')) {
-      updateProductState(productId, { isRemoved: true });
+      updateProduct(productId, { isRemoved: true, isActive: false });
     }
   };
 
   const handleRestore = (productId) => {
-    updateProductState(productId, { 
-      isHidden: false, 
-      isOutOfStock: false, 
-      isRemoved: false 
+    updateProduct(productId, { 
+      isRemoved: false,
+      isActive: true,
+      inStock: true
     });
   };
 
-  // Filter products
+  // Filter products based on direct Product collection fields
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product._id.toString().includes(searchTerm);
@@ -122,11 +109,11 @@ export default function AdminProductsPage() {
     
     let matchesStatus = true;
     if (filterStatus === 'active') {
-      matchesStatus = !product.isHidden && !product.isOutOfStock && !product.isRemoved;
+      matchesStatus = product.isActive && product.inStock && !product.isRemoved;
     } else if (filterStatus === 'hidden') {
-      matchesStatus = product.isHidden;
+      matchesStatus = !product.isActive;
     } else if (filterStatus === 'outOfStock') {
-      matchesStatus = product.isOutOfStock;
+      matchesStatus = !product.inStock;
     } else if (filterStatus === 'removed') {
       matchesStatus = product.isRemoved;
     }
@@ -140,8 +127,8 @@ export default function AdminProductsPage() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
 
-  // Get unique categories
-  const categories = [...new Set(PRODUCTS.map(p => p.category))];
+  // Get unique categories from products
+  const categories = [...new Set(products.map(p => p.category))];
 
   if (loading) {
     return (
@@ -161,12 +148,12 @@ export default function AdminProductsPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Products Management</h1>
             <p className="text-gray-600 mt-1">
-              Manage {PRODUCTS.length} products from catalog
+              Manage {products.length} products from MongoDB
             </p>
           </div>
           <div className="flex items-center space-x-2">
             <Package className="w-6 h-6 text-green-600" />
-            <span className="text-2xl font-bold text-green-600">{PRODUCTS.length}</span>
+            <span className="text-2xl font-bold text-green-600">{products.length}</span>
           </div>
         </div>
 
@@ -285,11 +272,11 @@ export default function AdminProductsPage() {
                           <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
                             Removed
                           </span>
-                        ) : product.isOutOfStock ? (
+                        ) : !product.inStock ? (
                           <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
                             Out of Stock
                           </span>
-                        ) : product.isHidden ? (
+                        ) : !product.isActive ? (
                           <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
                             Hidden
                           </span>
@@ -313,29 +300,29 @@ export default function AdminProductsPage() {
                         ) : (
                           <>
                             <button
-                              onClick={() => handleToggleVisibility(product._id, product.isHidden)}
+                              onClick={() => handleToggleVisibility(product._id, product.isActive)}
                               className={`${
-                                product.isHidden 
-                                  ? 'text-blue-600 hover:text-blue-900' 
-                                  : 'text-gray-600 hover:text-gray-900'
+                                product.isActive 
+                                  ? 'text-gray-600 hover:text-gray-900' 
+                                  : 'text-blue-600 hover:text-blue-900'
                               } flex items-center`}
-                              title={product.isHidden ? 'Show product' : 'Hide product'}
+                              title={product.isActive ? 'Hide product' : 'Show product'}
                             >
-                              {product.isHidden ? (
-                                <Eye className="w-4 h-4" />
-                              ) : (
+                              {product.isActive ? (
                                 <EyeOff className="w-4 h-4" />
+                              ) : (
+                                <Eye className="w-4 h-4" />
                               )}
                             </button>
                             
                             <button
-                              onClick={() => handleToggleStock(product._id, product.isOutOfStock)}
+                              onClick={() => handleToggleStock(product._id, product.inStock)}
                               className={`${
-                                product.isOutOfStock 
-                                  ? 'text-green-600 hover:text-green-900' 
-                                  : 'text-yellow-600 hover:text-yellow-900'
+                                product.inStock 
+                                  ? 'text-yellow-600 hover:text-yellow-900' 
+                                  : 'text-green-600 hover:text-green-900'
                               } flex items-center`}
-                              title={product.isOutOfStock ? 'Mark in stock' : 'Mark out of stock'}
+                              title={product.inStock ? 'Mark out of stock' : 'Mark in stock'}
                             >
                               <AlertTriangle className="w-4 h-4" />
                             </button>
@@ -393,24 +380,23 @@ export default function AdminProductsPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-lg shadow p-4">
             <div className="text-sm font-medium text-gray-500">Total Products</div>
-            <div className="text-2xl font-bold text-gray-900 mt-1">{PRODUCTS.length}</div>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
             <div className="text-sm font-medium text-gray-500">Active</div>
             <div className="text-2xl font-bold text-green-600 mt-1">
-              {products.filter(p => !p.isHidden && !p.isOutOfStock && !p.isRemoved).length}
+              {products.filter(p => p.isActive && p.inStock && !p.isRemoved).length}
             </div>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
             <div className="text-sm font-medium text-gray-500">Out of Stock</div>
             <div className="text-2xl font-bold text-yellow-600 mt-1">
-              {products.filter(p => p.isOutOfStock).length}
+              {products.filter(p => !p.inStock).length}
             </div>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
             <div className="text-sm font-medium text-gray-500">Hidden</div>
             <div className="text-2xl font-bold text-gray-600 mt-1">
-              {products.filter(p => p.isHidden && !p.isRemoved).length}
+              {products.filter(p => !p.isActive && !p.isRemoved).length}
             </div>
           </div>
         </div>

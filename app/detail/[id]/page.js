@@ -14,8 +14,7 @@ import FAQAccordion from '@/components/FAQAccordion';
 import { generateProductSchema, generateBreadcrumbSchema } from '@/lib/schema-markup';
 import { useCart } from '@/context/CartContext';
 import Link from 'next/link';
-// Remove hardcoded import
-// import { PRODUCTS } from '@/lib/product-data';
+import { toast } from 'react-toastify';
 
 export default function ProductDetailsPage() {
   const params = useParams();
@@ -75,10 +74,10 @@ export default function ProductDetailsPage() {
       setLoading(true);
       console.log('Fetching product details for ID:', productId);
       
-      // Use direct ID lookup instead of search
+      // Fetch from MongoDB API
       const response = await fetch(`/api/products?id=${productId}`);
       const data = await response.json();
-      console.log('Direct ID API Response:', data);
+      console.log('API Response:', data);
       
       if (data.success && data.products.length > 0) {
         const foundProduct = data.products[0];
@@ -104,11 +103,13 @@ export default function ProductDetailsPage() {
           setSelectedImage(0);
         }
       } else {
-        console.log('Product not found with direct ID lookup');
+        console.log('Product not found in database');
+        toast.error('Product not found');
         setProduct(null);
       }
     } catch (error) {
       console.error('Error fetching product:', error);
+      toast.error('Error loading product details');
       setProduct(null);
     } finally {
       setLoading(false);
@@ -196,7 +197,7 @@ export default function ProductDetailsPage() {
               The product you are looking for does not exist.
             </p>
             <Link
-              href="/products"
+              href="/shop"
               className="inline-block px-4 py-2 bg-[#fbb710] text-white text-sm hover:bg-[#52dd28ff] transition-colors"
             >
               Browse Products
@@ -244,11 +245,11 @@ export default function ProductDetailsPage() {
             HOME
           </Link>
           <span>&gt;</span>
-          <Link href="/products" className="hover:text-[#131212] transition-colors">
+          <Link href="/shop" className="hover:text-[#131212] transition-colors">
             SHOP
           </Link>
           <span>&gt;</span>
-          <Link href={`/products#${product.category}`} className="hover:text-[#131212] transition-colors capitalize">
+          <Link href={`/shop#${product.category}`} className="hover:text-[#131212] transition-colors capitalize">
             {product.category}
           </Link>
           <span>&gt;</span>
@@ -259,8 +260,8 @@ export default function ProductDetailsPage() {
         <div className="flex-1 px-3 sm:px-4 lg:px-8 pb-12">
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-10">
             {/* Image Gallery */}
-            <div className="w-full lg:max-w-[600px]">
-              <div className="w-full aspect-[4/5] overflow-hidden bg-[#f5f7fa] mb-2 sm:mb-3 lg:mb-4">
+            <div className="w-full lg:max-w-[450px]">
+              <div className="w-full aspect-square overflow-hidden bg-[#f5f7fa] mb-2 sm:mb-3 lg:mb-4">
                 <img
                   src={productImages[selectedImage] || product.primaryImage || product.image}
                   alt={`${product.name} - ${selectedColor} - View ${selectedImage + 1}`}
@@ -286,67 +287,6 @@ export default function ProductDetailsPage() {
                       />
                     </button>
                   ))}
-                </div>
-              )}
-
-              {/* Color Image Grid */}
-              {product.images && Object.keys(product.images).length > 0 && (
-                <div className="mt-6 border-t border-gray-200 pt-6">
-                  <h3 className="text-sm font-medium text-gray-900 mb-3">More Images by Color</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {Object.entries(product.images).map(([color, images]) => (
-                      console.log(`Rendering color ${color} with ${images.length} images`),
-                      <div key={color} className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-3 h-3 rounded-full border border-gray-300"
-                            style={{ backgroundColor: getColorCode(color) }}
-                          />
-                          <span className="text-xs font-medium text-gray-700">{color}</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-1">
-                          {images.slice(0, 4).map((img, idx) => (
-                            console.log(`Rendering image ${idx}: ${img}`),
-                            <div 
-                              key={idx}
-                              className="aspect-square overflow-hidden rounded border border-gray-200 hover:border-[#fbb710] transition-colors cursor-pointer"
-                              onClick={() => {
-                                // Switch to this color and show its images
-                                setSelectedColor(color);
-                                const colorImages = product.images[color];
-                                if (colorImages && colorImages.length > 0) {
-                                  const imagesToShow = [
-                                    product.primaryImage,
-                                    ...colorImages.slice(0, 3)
-                                  ];
-                                  setProductImages(imagesToShow);
-                                  setSelectedImage(0);
-                                }
-                              }}
-                            >
-                              <img 
-                                src={img} 
-                                alt={`${product.name} - ${color} - ${idx + 1}`}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  console.log(`Image failed to load: ${img}`);
-                                  e.target.style.display = 'none';
-                                }}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                        {images.length > 4 && (
-                          <span className="text-xs text-gray-500">
-                            +{images.length - 4} more
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-4 text-xs text-gray-500">
-                    Debug: Found {Object.keys(product.images).length} colors with images
-                  </div>
                 </div>
               )}
             </div>

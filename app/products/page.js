@@ -9,8 +9,8 @@ import MobileNav from '@/components/MobileNav';
 import ProductCard from '@/components/ProductCard';
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
-import axios from '@/lib/axios';
-import { PRODUCTS, CATEGORY_INFO } from '@/lib/product-data';
+import { toast } from 'react-toastify';
+import { CATEGORY_INFO } from '@/lib/product-data';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
@@ -26,35 +26,27 @@ export default function ProductsPage() {
   }, []);
 
   useEffect(() => {
+    // Load products from MongoDB
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/products?isActive=true');
+        const data = await response.json();
+        if (data.success) {
+          setProducts(data.products);
+        } else {
+          toast.error('Failed to load products');
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        toast.error('Error loading products');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
     fetchProducts();
   }, []);
-
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      
-      // Try to fetch from API
-      try {
-        const response = await axios.get('/api/admin/products');
-        const apiProducts = response.data?.products || response.data?.data || [];
-        if (apiProducts.length > 0) {
-          setProducts(apiProducts);
-          setLoading(false);
-          return;
-        }
-      } catch (apiError) {
-        console.log('API fetch failed, using sample data');
-      }
-      
-      // Fallback to shared data
-      setProducts(PRODUCTS);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      setProducts(PRODUCTS);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('en-IN', {

@@ -9,6 +9,7 @@ import MobileNav from '@/components/MobileNav';
 import Footer from '@/components/sections/Footer';
 import ScrollToTop from '@/components/ScrollToTop';
 import ProductCard from '@/components/ProductCard';
+import { toast } from 'react-toastify';
 import { CATEGORY_INFO } from '@/lib/product-data';
 
 const categories = [
@@ -80,18 +81,21 @@ export default function ShopPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Load products
+  // Load products from MongoDB
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/products');
+        const response = await fetch('/api/products?isActive=true');
         const data = await response.json();
         if (data.success) {
           setProducts(data.products);
+        } else {
+          toast.error('Failed to load products');
         }
       } catch (error) {
         console.error('Error loading products:', error);
+        toast.error('Error loading products');
       } finally {
         setLoading(false);
       }

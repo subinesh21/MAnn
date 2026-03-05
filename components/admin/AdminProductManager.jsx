@@ -93,26 +93,31 @@ export default function AdminProductManager() {
     isActive: true
   });
 
-  // Fetch all products
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
+  // Fetch all products from MongoDB
   const fetchProducts = async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/products');
       const data = await response.json();
+      
       if (data.success) {
-        setProducts(data.products);
+        setProducts(data.products || []);
+      } else {
+        toast.error('Failed to fetch products');
+        setProducts([]);
       }
     } catch (error) {
       console.error('Error fetching products:', error);
-      toast.error('Failed to load products');
+      toast.error('Error loading products');
+      setProducts([]);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -253,16 +258,19 @@ export default function AdminProductManager() {
 
   const handleToggleStock = async (product) => {
     try {
+      const newStockStatus = !product.inStock;
+      
+      // Update full product in MongoDB
       const response = await fetch(`/api/admin/products/${product._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inStock: !product.inStock })
+        body: JSON.stringify({ inStock: newStockStatus })
       });
       
       const data = await response.json();
       
       if (response.ok) {
-        toast.success(`Product marked as ${!product.inStock ? 'in stock' : 'out of stock'}`);
+        toast.success(`Product marked as ${newStockStatus ? 'in stock' : 'out of stock'}`);
         fetchProducts();
       } else {
         toast.error(data.message || 'Failed to update stock status');
@@ -275,16 +283,19 @@ export default function AdminProductManager() {
 
   const handleToggleVisibility = async (product) => {
     try {
+      const newVisibility = !product.isActive;
+      
+      // Update full product in MongoDB
       const response = await fetch(`/api/admin/products/${product._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isActive: !product.isActive })
+        body: JSON.stringify({ isActive: newVisibility })
       });
       
       const data = await response.json();
       
       if (response.ok) {
-        toast.success(`Product ${!product.isActive ? 'published' : 'hidden'}`);
+        toast.success(`Product ${newVisibility ? 'published' : 'hidden'}`);
         fetchProducts();
       } else {
         toast.error(data.message || 'Failed to update visibility');
@@ -864,7 +875,7 @@ export default function AdminProductManager() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex justify-end space-x-2">
+                    <div className="flex flex-col items-end space-y-3">
                       <button
                         onClick={() => handleEdit(product)}
                         className="p-2 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-full transition-colors"

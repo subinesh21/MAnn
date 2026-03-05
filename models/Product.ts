@@ -71,6 +71,10 @@ const productSchema = new mongoose.Schema({
     type: Boolean,
     default: true // For hiding/unhiding products
   },
+  isRemoved: {
+    type: Boolean,
+    default: false // For soft deleting products
+  },
   createdAt: {
     type: Date,
     default: Date.now

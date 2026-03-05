@@ -1,79 +1,131 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-import Product from '@/models/Product';
-import ProductStateModel from '@/models/ProductState';
-import { PRODUCTS as HARDCODED_PRODUCTS } from '@/lib/product-data';
+import ProductModel from '@/models/Product';
 
-export const dynamic = 'force-dynamic';
-
-// GET - Fetch products with filtering
+// GET - Fetch products (with optional filters)
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    await connectDB();
+
+    const searchParams = request.nextUrl.searchParams;
     const category = searchParams.get('category');
     const brand = searchParams.get('brand');
-    const inStock = searchParams.get('inStock');
     const isActive = searchParams.get('isActive');
+    const inStock = searchParams.get('inStock');
     const search = searchParams.get('search');
-    const id = searchParams.get('id');
-    
-    // Fetch product states from MongoDB
-    await connectDB();
-    const productStates = await ProductStateModel.find({});
-    const statesMap = {} as any;
-    productStates.forEach((state: any) => {
-      statesMap[state.productId] = state;
-    });
-    
-    // Start with hardcoded products
-    let products = HARDCODED_PRODUCTS.map(product => {
-      const state = statesMap[product._id];
-      return {
-        ...product,
-        isHidden: state?.isHidden || false,
-        isOutOfStock: state?.isOutOfStock || false,
-        isRemoved: state?.isRemoved || false,
-        inStock: !(state?.isOutOfStock || false),
-        isActive: !(state?.isHidden || state?.isRemoved || false)
-      };
-    });
-    
-    // Filter out removed and hidden products by default
-    products = products.filter(p => !p.isRemoved && !p.isHidden);
-    
-    // Apply additional filters
-    if (category) products = products.filter(p => p.category === category);
-    if (brand) products = products.filter(p => p.brand === brand);
-    if (inStock === 'true') products = products.filter(p => p.inStock);
-    if (search) {
-      products = products.filter(p => 
-        p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p._id.toString().includes(search)
-      );
-    }
-    
-    // Handle direct ID lookup
+    const id = searchParams.get('id'); // For single product lookup
+
+    // If ID is provided, return single product
     if (id) {
-      const product = products.find(p => p._id.toString() === id || p.id.toString() === id);
-      return NextResponse.json({
-        success: true,
-        count: product ? 1 : 0,
-        products: product ? [product] : []
-      });
+      let product = null;
+      
+      // Try to find by numeric id field first
+      const numericId = parseInt(id);
+      if (!isNaN(numericId)) {
+        product = await ProductModel.findOne({ id: numericId });
+      }
+      
+      // If not found by numeric id, try by _id (ObjectId)
+      if (!product && id.match(/^[0-9a-fA-F]{24}$/)) {
+        product = await ProductModel.findById(id);
+      }
+      
+      if (product) {
+        return NextResponse.json({
+          success: true,
+          products: [product],
+          count: 1
+        });
+      } else {
+        return NextResponse.json({
+          success: true,
+          products: [],
+          count: 0
+        });
+      }
     }
-    
+
+    // Build query for multiple products
+    const query: any = {};
+
+    if (category) {
+      query.category = category;
+    }
+
+    if (brand) {
+      query.brand = brand;
+    }
+
+    if (isActive !== null && isActive !== undefined) {
+      query.isActive = isActive === 'true';
+    }
+
+    if (inStock !== null && inStock !== undefined) {
+      query.inStock = inStock === 'true';
+    }
+
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Fetch products
+    const products = await ProductModel.find(query).sort({ createdAt: -1 });
+
     return NextResponse.json({
       success: true,
-      count: products.length,
-      products
+      products,
+      count: products.length
     });
-    
+
   } catch (error: any) {
-    console.error('Get products error:', error);
+    console.error('Error fetching products:', error);
     return NextResponse.json(
       { 
-        success: false,
+        success: false, 
         message: 'Failed to fetch products',
+        error: error.message 
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// POST - Create new product (Admin only)
+export async function POST(request: NextRequest) {
+  try {
+    await connectDB();
+
+    const body = await request.json();
+
+    // Validate required fields
+    const requiredFields = ['name', 'price', 'primaryImage', 'category', 'brand', 'description'];
+    for (const field of requiredFields) {
+      if (!body[field]) {
+        return NextResponse.json(
+          { success: false, message: `Missing required field: ${field}` },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Create product
+    const product = await ProductModel.create(body);
+
+    return NextResponse.json({
+      success: true,
+      product,
+      message: 'Product created successfully'
+    });
+
+  } catch (error: any) {
+    console.error('Error creating product:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: 'Failed to create product',
         error: error.message 
       },
       { status: 500 }
