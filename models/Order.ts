@@ -30,8 +30,20 @@ export interface IOrder extends Document {
   items: IOrderItem[];
   totalAmount: number;
   shippingAddress: IShippingAddress;
-  paymentMethod: 'cod' | 'online';
+  paymentMethod: 'cod' | 'online' | 'razorpay' | 'stripe';
   status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+  // New fields for payment gateway
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  razorpaySignature?: string;
+  // Pricing breakdown
+  subtotal?: number;
+  deliveryCharges?: number;
+  gstAmount?: number;
+  discount?: number;
+  // Delivery info
+  pincode?: string;
+  deliveryDays?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -91,7 +103,7 @@ const OrderSchema = new Schema<IOrder>({
   },
   paymentMethod: {
     type: String,
-    enum: ['cod', 'online'],
+    enum: ['cod', 'online', 'razorpay', 'stripe'],
     default: 'cod',
   },
   status: {
@@ -99,6 +111,18 @@ const OrderSchema = new Schema<IOrder>({
     enum: ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'],
     default: 'pending',
   },
+  // Payment gateway fields
+  razorpayOrderId: { type: String },
+  razorpayPaymentId: { type: String },
+  razorpaySignature: { type: String },
+  // Pricing breakdown
+  subtotal: { type: Number },
+  deliveryCharges: { type: Number },
+  gstAmount: { type: Number },
+  discount: { type: Number },
+  // Delivery info
+  pincode: { type: String },
+  deliveryDays: { type: String },
 }, {
   timestamps: true,
 });
