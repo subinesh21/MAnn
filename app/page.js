@@ -24,7 +24,9 @@ export default function HomePage() {
       <div className="lg:ml-[280px] flex flex-col min-h-screen">
         <div className="h-14 lg:hidden"></div>
 
-        <CategoryGrid />
+        <div className="flex-1">
+          <CategoryGrid />
+        </div>
 
         <Footer />
       </div>

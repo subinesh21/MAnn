@@ -65,10 +65,10 @@ export const SHIPPING_CONFIG = {
 
 // Invoice Configuration
 export const INVOICE_CONFIG = {
-  COMPANY_NAME: 'Thulira Sustainable Products',
+  COMPANY_NAME: 'Thulira',
   COMPANY_ADDRESS: '123 Green Street, Eco City, EC 123456',
   COMPANY_EMAIL: 'support@thulira.com',
-  COMPANY_PHONE: '+91 98765 43210',
+  COMPANY_PHONE: '+91 9087352282',
   GST_NUMBER: 'GSTIN1234567890',
   PAN_NUMBER: 'PAN1234567890'
 };

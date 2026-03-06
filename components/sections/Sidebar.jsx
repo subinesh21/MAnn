@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
-import { Mail, Facebook, Twitter, Instagram, FileText, User, Heart, Search } from 'lucide-react';
+import { Mail, Facebook, Twitter, Instagram, FileText, User, Heart, Search, ChevronDown, MoreHorizontal } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa';
 
 const navItems = [
@@ -19,6 +19,8 @@ export default function Sidebar() {
   const [isMobile, setIsMobile] = useState(false);
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const moreContentRef = useRef(null);
   const pathname = usePathname();
   const router = useRouter();
   const { cartCount } = useCart();
@@ -130,9 +132,11 @@ export default function Sidebar() {
           </a>
         </div>
 
-        {/* Middle Section: Navigation + Search + Blogs (takes remaining space) */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: 0 }}>
-          {/* Navigation */}
+        {/* Top spacer - helps center nav vertically */}
+        <div style={{ flex: 1 }} />
+
+        {/* Navigation Section (does not shrink) */}
+        <div style={{ flexShrink: 0 }}>
           <nav style={{ marginLeft: '28px', paddingTop: '10px' }}>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
               {navItems.map((item) => (
@@ -166,9 +170,16 @@ export default function Sidebar() {
               ))}
             </ul>
           </nav>
+        </div>
+
+        {/* Flexible spacer - absorbs More dropdown expansion */}
+        <div style={{ flex: 1 }} />
+
+        {/* Bottom Section: Search + More + Account + Social (always pinned to bottom) */}
+        <div style={{ flexShrink: 0 }}>
 
           {/* Search Section */}
-          <div style={{ marginTop: 'clamp(82px, 2vh, 24px)', marginLeft: '16px', marginBottom: 'clamp(8px, 1.5vh, 24px)', minHeight: '44px' }}>
+          <div style={{ marginLeft: '16px', marginBottom: '4px', minHeight: '44px' }}>
             {!isSearchActive ? (
               <div
                 style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '10px 0' }}
@@ -218,47 +229,79 @@ export default function Sidebar() {
             )}
           </div>
 
-          {/* Blogs Button */}
-          <div style={{ marginLeft: '16px' }}>
-            <a
-              href="/blogs"
+          {/* More Dropdown (opens upward, pushes search up) */}
+          <div style={{ marginLeft: '16px', marginBottom: '8px', display: 'flex', flexDirection: 'column-reverse' }}>
+            <button
+              onClick={() => setIsMoreOpen(!isMoreOpen)}
+              className="more-dropdown-btn"
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 width: '100%',
                 textAlign: 'left',
-                textDecoration: 'none'
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '10px 0',
+                transition: 'color 0.3s ease'
               }}
             >
-              <FileText style={{ width: '20px', height: '20px', marginRight: '16px', color: '#6b6b6b' }} />
-              <span style={{ fontSize: '14px', fontWeight: 500, color: '#131212' }}>
-                Blogs
-              </span>
-            </a>
-          </div>
+              <MoreHorizontal style={{ width: '20px', height: '20px', marginRight: '16px', color: '#6b6b6b', transition: 'color 0.3s ease' }} />
+              <span style={{ fontSize: '14px', fontWeight: 500, color: '#131212', transition: 'color 0.3s ease' }}>More</span>
+              <ChevronDown
+                style={{
+                  width: '16px',
+                  height: '16px',
+                  marginLeft: 'auto',
+                  color: '#6b6b6b',
+                  transition: 'transform 0.3s ease, color 0.3s ease',
+                  transform: isMoreOpen ? 'rotate(0deg)' : 'rotate(180deg)'
+                }}
+              />
+            </button>
 
-          {/* Wishlist Button */}
-          <div style={{ marginLeft: '16px', marginTop: '12px' }}>
-            <a
-              href="/wishlist"
+            {/* Dropdown Content (appears above the button, pushes search up) */}
+            <div
+              ref={moreContentRef}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                width: '100%',
-                textAlign: 'left',
-                textDecoration: 'none'
+                overflow: 'hidden',
+                transition: 'max-height 0.3s ease, opacity 0.3s ease',
+                maxHeight: isMoreOpen ? '120px' : '0px',
+                opacity: isMoreOpen ? 1 : 0,
+                paddingLeft: '12px'
               }}
             >
-              <Heart style={{ width: '20px', height: '20px', marginRight: '16px', color: '#6b6b6b' }} />
-              <span style={{ fontSize: '14px', fontWeight: 500, color: '#131212' }}>
-                Wishlist
-              </span>
-            </a>
+              <a
+                href="/blogs"
+                className="more-dropdown-item"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '8px 0',
+                  textDecoration: 'none',
+                  transition: 'color 0.3s ease'
+                }}
+              >
+                <FileText style={{ width: '18px', height: '18px', marginRight: '14px', color: '#6b6b6b', transition: 'color 0.3s ease' }} />
+                <span style={{ fontSize: '13px', fontWeight: 500, color: '#131212', transition: 'color 0.3s ease' }}>Blogs</span>
+              </a>
+              <a
+                href="/wishlist"
+                className="more-dropdown-item"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '8px 0',
+                  textDecoration: 'none',
+                  transition: 'color 0.3s ease'
+                }}
+              >
+                <Heart style={{ width: '18px', height: '18px', marginRight: '14px', color: '#6b6b6b', transition: 'color 0.3s ease' }} />
+                <span style={{ fontSize: '13px', fontWeight: 500, color: '#131212', transition: 'color 0.3s ease' }}>Wishlist</span>
+              </a>
+            </div>
           </div>
-        </div>
 
-        {/* Bottom Section: Account + Social (always pinned to bottom) */}
-        <div style={{ flexShrink: 0 }}>
           {/* Account Section */}
           <div style={{ paddingTop: '16px', paddingBottom: '16px', marginLeft: '16px', borderTop: '1px solid #ebebeb' }}>
             {isAuthenticated ? (
@@ -350,6 +393,12 @@ export default function Sidebar() {
         .social-instagram:hover { color: #e1306c !important; }
         
         .search-text-hover:hover { color: #52dd28ff !important; }
+
+        .more-dropdown-btn:hover span,
+        .more-dropdown-btn:hover svg { color: #52dd28ff !important; }
+
+        .more-dropdown-item:hover span,
+        .more-dropdown-item:hover svg { color: #52dd28ff !important; }
 
         .mobile-nav {
           display: flex;

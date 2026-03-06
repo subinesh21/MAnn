@@ -72,17 +72,56 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    setCartItems(prevItems => {
-      const productId = product._id || product.productId || product.id;
-      // Check if item already exists in cart (with same color if applicable)
-      const existingItemIndex = prevItems.findIndex(
-        item => (item._id || item.productId || item.id) === productId && (color ? item.color === color : !item.color)
-      );
+    // Normalize color: treat undefined, empty string as null
+    const normalizedColor = color && color.trim() ? color.trim() : null;
+    const productId = String(product._id || product.productId || product.id);
 
-      if (existingItemIndex >= 0) {
+    // Show toast based on current state before pure update
+    let existingItemIndex = cartItems.findIndex(item => {
+      const itemId = String(item._id || item.productId || item.id);
+      const itemColor = item.color && String(item.color).trim() ? String(item.color).trim() : null;
+      return itemId === productId && itemColor === normalizedColor;
+    });
+
+    if (existingItemIndex < 0) {
+      existingItemIndex = cartItems.findIndex(item => {
+        const itemId = String(item._id || item.productId || item.id);
+        return itemId === productId;
+      });
+    }
+
+    if (existingItemIndex >= 0) {
+      const newQuantity = cartItems[existingItemIndex].quantity + quantity;
+      toast.success(`Updated cart: ${product.name} (×${newQuantity})`);
+    } else {
+      toast.success(`Added to cart: ${product.name}`);
+    }
+
+    setCartItems(prevItems => {
+      // First, try to find exact match (same product ID + same color)
+      let innerExistingIndex = prevItems.findIndex(item => {
+        const itemId = String(item._id || item.productId || item.id);
+        const itemColor = item.color && String(item.color).trim() ? String(item.color).trim() : null;
+        return itemId === productId && itemColor === normalizedColor;
+      });
+
+      // If no exact match found, try matching just by product ID (ignore color differences)
+      if (innerExistingIndex < 0) {
+        innerExistingIndex = prevItems.findIndex(item => {
+          const itemId = String(item._id || item.productId || item.id);
+          return itemId === productId;
+        });
+      }
+
+      if (innerExistingIndex >= 0) {
         // Update quantity of existing item
         const updatedItems = [...prevItems];
-        updatedItems[existingItemIndex].quantity += quantity;
+        updatedItems[innerExistingIndex] = {
+          ...updatedItems[innerExistingIndex],
+          quantity: updatedItems[innerExistingIndex].quantity + quantity,
+          // Update color if a new one is provided
+          color: normalizedColor || updatedItems[innerExistingIndex].color,
+        };
         return updatedItems;
       } else {
         // Add new item
@@ -92,26 +131,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           id: product.id || productId,
           name: product.name,
           price: product.price,
-          image: product.image || '/images/product-chai-cups.jpg',
+          image: product.image || product.primaryImage || '/images/product-chai-cups.jpg',
           quantity: quantity,
-          color: color,
+          color: normalizedColor,
         };
         return [...prevItems, newItem];
       }
     });
-
-    // Open cart drawer when adding items
-    setIsCartOpen(true);
   };
 
   const removeFromCart = (productId: string, color: string | null = null) => {
     setCartItems(prevItems => {
       const filtered = prevItems.filter(item => {
-        const itemId = item._id || item.productId || item.id;
+        const itemId = String(item._id || item.productId || item.id);
         if (color) {
-          return !(itemId === productId && item.color === color);
+          return !(itemId === String(productId) && item.color === color);
         }
-        return itemId !== productId;
+        return itemId !== String(productId);
       });
       
       if (filtered.length < prevItems.length) {
@@ -129,12 +165,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     setCartItems(prevItems => {
       const updatedItems = prevItems.map(item => {
-        const itemId = item._id || item.productId || item.id;
+        const itemId = String(item._id || item.productId || item.id);
         if (color) {
-          if (itemId === productId && item.color === color) {
+          if (itemId === String(productId) && item.color === color) {
             return { ...item, quantity: newQuantity };
           }
-        } else if (itemId === productId && !item.color) {
+        } else if (itemId === String(productId) && !item.color) {
           return { ...item, quantity: newQuantity };
         }
         return item;

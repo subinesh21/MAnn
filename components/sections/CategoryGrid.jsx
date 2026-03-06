@@ -2,11 +2,12 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CATEGORIES, getProductsByCategory } from '@/lib/product-data';
 
 export default function CategoryGrid() {
   const [categoryPrices, setCategoryPrices] = useState({});
+  const gridRef = useRef(null);
 
   useEffect(() => {
     // Calculate minimum price for each category
@@ -33,7 +34,7 @@ export default function CategoryGrid() {
       image: '/images/category-drinkware.png',
       imageFit: 'cover',
       imagePosition: 'center',
-      gridSpan: 'normal', // Mobile: normal, Desktop: tall
+      gridSpan: 'normal',
       textPosition: 'top-left',
       textColor: 'white',
       overlay: 'dark',
@@ -124,18 +125,8 @@ export default function CategoryGrid() {
     },
   ];
 
-  // Height mapping - Different for mobile and desktop
-  const heightMap = {
-    // Mobile first (small screens)
-    tall: 'h-[280px] sm:h-[420px] md:h-[520px] lg:h-[700px]',
-    wide: 'h-[180px] sm:h-[280px] md:h-[320px] lg:h-[350px]',
-    normal: 'h-[180px] sm:h-[280px] md:h-[320px] lg:h-[350px]'
-  };
-
   // Grid span mapping - Different behavior for mobile vs desktop
   const spanMap = {
-    // On mobile, all items are normal (no spans)
-    // On desktop, apply the spans
     tall: 'sm:row-span-2',
     wide: 'sm:col-span-2',
     normal: ''
@@ -186,9 +177,13 @@ export default function CategoryGrid() {
   };
 
   return (
-    <section className="bg-background w-full">
-      {/* Main Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-0">
+    <section className="bg-background w-full flex flex-col min-h-[calc(100vh-56px)] lg:min-h-screen">
+      {/* Main Grid - uses flex-1 to fill parent vertically, grid rows stretch automatically */}
+      <div
+        ref={gridRef}
+        className="grid grid-cols-2 md:grid-cols-4 gap-0 flex-1 w-full"
+        style={{ gridAutoRows: '1fr' }}
+      >
         {gridItems.map((item, index) => (
           <motion.div
             key={item.id}
@@ -199,7 +194,7 @@ export default function CategoryGrid() {
               ${spanMap[item.gridSpan]}`}
           >
             <Link href={`/products#${item.id}`} className="block h-full">
-              <div className={`relative w-full ${heightMap[item.gridSpan]} overflow-hidden`}>
+              <div className="relative w-full h-full overflow-hidden">
                 <img
                   src={item.image}
                   alt={`${item.customName || item.name} - eco-friendly products by Thulira`}

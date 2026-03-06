@@ -47,7 +47,7 @@ export default function WishlistPage() {
             <div className="lg:ml-[280px] flex flex-col min-h-screen">
                 <div className="h-14 lg:hidden"></div>
 
-                <div className="flex-1 container mx-auto px-3 sm:px-6 py-8">
+                <div className="flex-1 px-4 sm:px-8 lg:px-12 py-8">
                     {/* Header */}
                     <div className="flex items-center justify-between mb-8">
                         <div className="flex items-center gap-3">

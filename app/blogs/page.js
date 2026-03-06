@@ -9,85 +9,7 @@ import Sidebar from '@/components/sections/Sidebar';
 import MobileNav from '@/components/MobileNav';
 import Footer from '@/components/sections/Footer';
 
-// Sample blog data
-const blogPosts = [
-  {
-    id: 1,
-    title: "10 Sustainable Living Tips for a Greener Home",
-    excerpt: "Discover simple yet effective ways to make your home more eco-friendly and reduce your carbon footprint.",
-    author: "Emma Green",
-    date: "Feb 15, 2026",
-    readTime: "5 min read",
-    category: "Sustainability",
-    image: "/images/blog-sustainable.jpg",
-    tags: ["eco-friendly", "home", "tips"]
-  },
-  {
-    id: 2,
-    title: "The Ultimate Guide to Eco-Friendly Kitchenware",
-    excerpt: "Everything you need to know about choosing sustainable kitchen products that look great and last longer.",
-    author: "James Chen",
-    date: "Feb 10, 2026",
-    readTime: "8 min read",
-    category: "Kitchen",
-    image: "/images/blog-kitchen.jpg",
-    tags: ["kitchenware", "guides", "eco-friendly"]
-  },
-  {
-    id: 3,
-    title: "How to Start Your Own Organic Herb Garden",
-    excerpt: "Learn the basics of growing fresh herbs at home with our step-by-step guide for beginners.",
-    author: "Sarah Miller",
-    date: "Feb 5, 2026",
-    readTime: "6 min read",
-    category: "Gardening",
-    image: "/images/blog-garden.jpg",
-    tags: ["gardening", "herbs", "diy"]
-  },
-  {
-    id: 4,
-    title: "The Benefits of Bamboo Products",
-    excerpt: "Why bamboo is taking over the sustainable product world and how it's better for the planet.",
-    author: "Michael Roberts",
-    date: "Jan 28, 2026",
-    readTime: "4 min read",
-    category: "Materials",
-    image: "/images/blog-bamboo.jpg",
-    tags: ["bamboo", "materials", "sustainability"]
-  },
-  {
-    id: 5,
-    title: "Zero Waste Kitchen: A Practical Guide",
-    excerpt: "Simple swaps and habits that can help you achieve a zero-waste kitchen without the stress.",
-    author: "Lisa Thompson",
-    date: "Jan 20, 2026",
-    readTime: "7 min read",
-    category: "Kitchen",
-    image: "/images/blog-zerowaste.jpg",
-    tags: ["zero waste", "kitchen", "tips"]
-  },
-  {
-    id: 6,
-    title: "Interview: Meet the Artisans Behind Our Products",
-    excerpt: "Get to know the skilled craftspeople who create our beautiful sustainable products.",
-    author: "David Park",
-    date: "Jan 12, 2026",
-    readTime: "10 min read",
-    category: "Stories",
-    image: "/images/blog-artisans.jpg",
-    tags: ["artisans", "behind the scenes", "craftsmanship"]
-  }
-];
-
-const categories = [
-  "All",
-  "Sustainability",
-  "Kitchen",
-  "Gardening",
-  "Materials",
-  "Stories",
-  "Tips & Guides"
-];
+import { blogPosts, categories } from '@/lib/blogData';
 
 export default function BlogsPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -107,10 +29,10 @@ export default function BlogsPage() {
       <Sidebar />
       <MobileNav />
 
-      <div className="main-content-wrapper lg:ml-[280px]">
+      <div className="lg:ml-[280px] flex flex-col min-h-screen">
         <div className="h-14 lg:hidden"></div>
 
-        {/* Hero Section */}
+        <div className="flex-1 w-full flex flex-col">
         <div className="relative bg-gradient-to-r from-[#52dd28ff]/10 to-[#52dd28ff]/5 py-20">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
@@ -228,7 +150,7 @@ export default function BlogsPage() {
                         </div>
 
                         <Link
-                          href={`/blogs/${post.id}`}
+                          href={`/blogs/${post.slug}`}
                           className="flex items-center gap-1 text-sm font-medium text-[#52dd28ff] hover:gap-2 transition-all"
                         >
                           Read More
@@ -266,6 +188,7 @@ export default function BlogsPage() {
               )}
             </>
           )}
+        </div>
         </div>
 
         <Footer />

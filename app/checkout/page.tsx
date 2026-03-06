@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { 
   ArrowLeft, ShoppingBag, CreditCard, MapPin, Phone, User, 
   CheckCircle, ShoppingCart, AlertCircle, Loader, Truck, 
-  Percent, Mail, Smartphone, Wallet, Building
+  Percent, Mail
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
@@ -18,7 +18,7 @@ import Footer from '@/components/sections/Footer';
 import { toast } from 'react-toastify';
 import { DeliveryCalculator } from '@/lib/delivery-calculator';
 import { GSTCalculator } from '@/lib/gst-calculator';
-import { PAYMENT_METHODS } from '@/lib/payment-config';
+
 
 declare global {
   interface Window {
@@ -37,8 +37,7 @@ export default function CheckoutPage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [pincode, setPincode] = useState('');
   const [deliveryInfo, setDeliveryInfo] = useState<any>(null);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('razorpay');
-  const [paymentTab, setPaymentTab] = useState<'upi' | 'card' | 'wallet' | 'netbanking'>('upi');
+
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
   
   // Shipping info state
@@ -85,16 +84,29 @@ export default function CheckoutPage() {
           const response = await fetch(`/api/user/profile?userId=${user.id}`);
           const data = await response.json();
           if (data.user) {
+            const addr = data.user.shippingAddress || {};
             setShippingInfo({
-              fullName: data.user.fullName || '',
-              address: data.user.address || '',
-              city: data.user.city || '',
-              state: data.user.state || '',
-              zipCode: data.user.zipCode || '',
-              country: data.user.country || 'India',
-              phone: data.user.phone || '',
+              fullName: addr.fullName || data.user.name || '',
+              address: addr.address || '',
+              city: addr.city || '',
+              state: addr.state || '',
+              zipCode: addr.zipCode || '',
+              country: addr.country || 'India',
+              phone: addr.phone || '',
               email: data.user.email || ''
             });
+
+            // Auto-fill the delivery pincode and trigger delivery calculation
+            const savedZip = addr.zipCode || '';
+            if (savedZip.length === 6) {
+              setPincode(savedZip);
+              try {
+                const info = DeliveryCalculator.calculateDeliveryCost(savedZip, itemsTotal);
+                setDeliveryInfo(info);
+              } catch (e) {
+                // ignore calculation errors
+              }
+            }
           }
         } catch (error) {
           console.error('Error fetching profile:', error);
@@ -242,7 +254,7 @@ export default function CheckoutPage() {
             userId: user?.id || 'guest',
           },
           pincode,
-          paymentMethod: selectedPaymentMethod
+          paymentMethod: 'razorpay'
         })
       });
 
@@ -273,11 +285,32 @@ export default function CheckoutPage() {
         theme: {
           color: '#2d5a3d'
         },
-        method: {
-          upi: true,
-          card: true,
-          netbanking: true,
-          wallet: true
+        config: {
+          display: {
+            blocks: {
+              utib: {
+                name: 'Pay using UPI',
+                instruments: [
+                  {
+                    method: 'upi',
+                    flows: ['qr', 'collect', 'intent'],
+                  }
+                ],
+              },
+              other: {
+                name: 'Other Payment Methods',
+                instruments: [
+                  { method: 'card' },
+                  { method: 'netbanking' },
+                  { method: 'wallet' },
+                ],
+              },
+            },
+            sequence: ['block.utib', 'block.other'],
+            preferences: {
+              show_default_blocks: true,
+            },
+          },
         },
         modal: {
           ondismiss: () => {
@@ -599,160 +632,6 @@ export default function CheckoutPage() {
                 )}
               </div>
 
-              {/* Payment Method Selection */}
-              <div className="bg-white rounded-xl border border-[#ebebeb] p-6">
-                <h2 className="text-xl font-semibold text-[#131212] mb-6 flex items-center">
-                  <CreditCard className="w-5 h-5 mr-2 text-green-600" />
-                  Payment Method
-                </h2>
-
-                {/* Payment Tabs */}
-                <div className="flex space-x-2 mb-6 overflow-x-auto">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentTab('upi')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
-                      paymentTab === 'upi'
-                        ? 'bg-green-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    <Smartphone className="w-4 h-4 inline mr-2" />
-                    UPI
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPaymentTab('card')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
-                      paymentTab === 'card'
-                        ? 'bg-green-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    <CreditCard className="w-4 h-4 inline mr-2" />
-                    Cards
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPaymentTab('wallet')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
-                      paymentTab === 'wallet'
-                        ? 'bg-green-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    <Wallet className="w-4 h-4 inline mr-2" />
-                    Wallets
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPaymentTab('netbanking')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
-                      paymentTab === 'netbanking'
-                        ? 'bg-green-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    <Building className="w-4 h-4 inline mr-2" />
-                    Net Banking
-                  </button>
-                </div>
-
-                {/* Payment Methods Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {paymentTab === 'upi' && PAYMENT_METHODS.UPI.map(method => (
-                    <label
-                      key={method.id}
-                      className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        selectedPaymentMethod === method.id
-                          ? 'border-green-600 bg-green-50'
-                          : 'border-gray-200 hover:border-green-300'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value={method.id}
-                        checked={selectedPaymentMethod === method.id}
-                        onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                        className="sr-only"
-                      />
-                      <div className="text-center">
-                        <div className="font-medium text-sm">{method.name}</div>
-                      </div>
-                    </label>
-                  ))}
-
-                  {paymentTab === 'card' && PAYMENT_METHODS.CARDS.map(method => (
-                    <label
-                      key={method.id}
-                      className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        selectedPaymentMethod === method.id
-                          ? 'border-green-600 bg-green-50'
-                          : 'border-gray-200 hover:border-green-300'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value={method.id}
-                        checked={selectedPaymentMethod === method.id}
-                        onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                        className="sr-only"
-                      />
-                      <div className="text-center">
-                        <div className="font-medium text-sm">{method.name}</div>
-                      </div>
-                    </label>
-                  ))}
-
-                  {paymentTab === 'wallet' && PAYMENT_METHODS.WALLET.map(method => (
-                    <label
-                      key={method.id}
-                      className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        selectedPaymentMethod === method.id
-                          ? 'border-green-600 bg-green-50'
-                          : 'border-gray-200 hover:border-green-300'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value={method.id}
-                        checked={selectedPaymentMethod === method.id}
-                        onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                        className="sr-only"
-                      />
-                      <div className="text-center">
-                        <div className="font-medium text-sm">{method.name}</div>
-                      </div>
-                    </label>
-                  ))}
-
-                  {paymentTab === 'netbanking' && PAYMENT_METHODS.NETBANKING.map(method => (
-                    <label
-                      key={method.id}
-                      className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        selectedPaymentMethod === method.id
-                          ? 'border-green-600 bg-green-50'
-                          : 'border-gray-200 hover:border-green-300'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value={method.id}
-                        checked={selectedPaymentMethod === method.id}
-                        onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                        className="sr-only"
-                      />
-                      <div className="text-center">
-                        <div className="font-medium text-sm">{method.name}</div>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
             </div>
 
             {/* Right Column - Order Summary */}

@@ -6,6 +6,7 @@ import { AuthProvider } from '@/context/AuthContext';
 import { ToastContainer } from 'react-toastify';
 import './globals.css';
 import 'react-toastify/dist/ReactToastify.css';
+import IntroSlides from '@/components/IntroSlides';
 
 // Configure Open Sans
 const openSans = Open_Sans({
@@ -110,11 +111,12 @@ export default function RootLayout({ children }) {
     <html lang="en" className={`${openSans.variable} ${poppins.variable} ${cinzel.variable}`}>
       <body className="bg-white">
         <AuthProvider>
+          <IntroSlides />
           <CartProvider>
             <WishlistProvider>
               {children}
               <ToastContainer
-                position="top-right"
+                position="top-center"
                 autoClose={3000}
                 hideProgressBar={false}
                 newestOnTop
